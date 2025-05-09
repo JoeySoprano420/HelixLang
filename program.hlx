@@ -1,0 +1,7 @@
+::gate main:
+
+   init: 
+      • load.env
+      • set.mode = SAFE
+
+::end
