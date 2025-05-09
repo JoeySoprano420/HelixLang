@@ -1,7 +1,11 @@
 ::gate main:
 
-   init: 
+   init:
       • load.env
       • set.mode = SAFE
+
+   ::fuse when clock>1200:
+      • burn.signal @ch4
+      • sync.pulse = ENABLED
 
 ::end
