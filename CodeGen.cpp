@@ -8,10 +8,24 @@ void InitStatement::emitNASM(std::ostream& out) {
     }
 }
 
+void ExpressionStatement::emitNASM(std::ostream& out) {
+    if (!op.empty())
+        out << "    ; expr: " << left << " " << op << " " << right << "\n";
+    else
+        out << "    ; expr: " << left << "\n";
+    out << "    nop\n";
+}
+
+void FuseStatement::emitNASM(std::ostream& out) {
+    out << "    ; FUSE WHEN " << condition << "\n";
+    for (auto* act : actions) {
+        act->emitNASM(out);
+    }
+}
+
 void GateBlock::emitNASM(std::ostream& out) {
     out << "; Gate: " << name << "\n";
-    for (auto stmt : body) {
+    for (auto* stmt : body) {
         stmt->emitNASM(out);
     }
-    out << "\n";
 }
