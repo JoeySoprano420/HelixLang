@@ -17,6 +17,22 @@ public:
     void emitNASM(std::ostream& out) override;
 };
 
+class ExpressionStatement : public ASTNode {
+public:
+    std::string left, op, right;
+    ExpressionStatement(std::string l, std::string o = "", std::string r = "")
+        : left(l), op(o), right(r) {}
+    void emitNASM(std::ostream& out) override;
+};
+
+class FuseStatement : public ASTNode {
+public:
+    std::string condition;
+    std::vector<ASTNode*> actions;
+    FuseStatement(std::string cond) : condition(cond) {}
+    void emitNASM(std::ostream& out) override;
+};
+
 class GateBlock : public ASTNode {
 public:
     std::string name;
