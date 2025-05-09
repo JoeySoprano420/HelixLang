@@ -1,8 +1,11 @@
 #include "Parser.h"
-#include <stdexcept>
 
 Parser::Parser(const std::vector<Token>& tokens)
     : tokens(tokens), current(0) {}
+
+Token Parser::peek() {
+    return tokens[current];
+}
 
 bool Parser::match(TokenType type) {
     if (peek().type == type) {
@@ -13,12 +16,7 @@ bool Parser::match(TokenType type) {
 }
 
 Token Parser::advance() {
-    if (current < tokens.size()) return tokens[current++];
-    return { T_EOF, "", 0, 0 };
-}
-
-Token Parser::peek() {
-    return tokens[current];
+    return tokens[current++];
 }
 
 ASTNode* Parser::parse() {
@@ -27,15 +25,14 @@ ASTNode* Parser::parse() {
 
 ASTNode* Parser::parseGate() {
     match(T_GATE);
-    Token nameTok = advance();  // gate name
+    Token nameTok = advance();
     match(T_COLON);
     match(T_NEWLINE);
 
     auto gate = new GateBlock();
     gate->name = nameTok.value;
 
-    while (!match(T_END)) {
-        if (peek().type == T_EOF) break;
+    while (!match(T_END) && peek().type != T_EOF) {
         ASTNode* stmt = parseStatement();
         if (stmt) gate->body.push_back(stmt);
     }
@@ -46,15 +43,46 @@ ASTNode* Parser::parseGate() {
 ASTNode* Parser::parseStatement() {
     if (match(T_INIT)) {
         match(T_COLON);
-        auto init = new InitStatement();
-        while (match(T_BULLET)) {
-            Token act = advance();  // identifier
-            init->actions.push_back(act.value);
+        auto stmt = new InitStatement();
+        while (peek().type == T_BULLET) {
+            match(T_BULLET);
+            stmt->actions.push_back(advance().value);
             match(T_NEWLINE);
         }
-        return init;
+        return stmt;
     }
 
-    advance();  // fallback
+    if (match(T_FUSE)) {
+        if (!match(T_WHEN)) return nullptr;
+        std::string cond = advance().value;
+        match(T_COLON);
+        match(T_NEWLINE);
+        auto fuse = new FuseStatement(cond);
+        while (peek().type == T_BULLET) {
+            match(T_BULLET);
+            std::string left = advance().value;
+            std::string op = "", right = "";
+            if (peek().type == T_OP) {
+                op = advance().value;
+                right = advance().value;
+            }
+            match(T_NEWLINE);
+            fuse->actions.push_back(new ExpressionStatement(left, op, right));
+        }
+        return fuse;
+    }
+
+    if (match(T_BULLET)) {
+        std::string left = advance().value;
+        std::string op = "", right = "";
+        if (peek().type == T_OP) {
+            op = advance().value;
+            right = advance().value;
+        }
+        match(T_NEWLINE);
+        return new ExpressionStatement(left, op, right);
+    }
+
+    advance();
     return nullptr;
 }
